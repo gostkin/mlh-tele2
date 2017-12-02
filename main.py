@@ -29,7 +29,8 @@ appLog.addHandler(logHandler)
 in_registration = {}
 
 
-@bot.message_handler(func=lambda message: message.chat.id in in_registration.keys(), content_types=["text"])
+@bot.message_handler(func=lambda message: message.chat.id in in_registration.keys() and
+                                          not message.text.strip().startswith('/escape'), content_types=["text"])
 def default_test(message):
     data = storage.Storage()
     if in_registration[message.chat.id][0] == 1:
@@ -239,7 +240,7 @@ def get_help(message):
 /services - получить список сервисов""")
 
 
-@bot.message_handler(commands=['numbers'])
+@bot.message_handler(commands=['numbers', 'remove'])
 def get_numbers(message):
     data = storage.Storage()
     try:
@@ -337,10 +338,10 @@ def callback_action_remove(call):
         data.close()
 
 
-@bot.message_handler(commands=['remove'])
-def remove_number(message):
-    in_registration[message.chat.id] = [3, []]
-    bot.send_message(message.chat.id, "Введите ваш номер:")
+# @bot.message_handler(commands=['remove'])
+# def remove_number(message):
+#    in_registration[message.chat.id] = [3, []]
+#    bot.send_message(message.chat.id, "Введите ваш номер:")
 
 
 @bot.callback_query_handler(lambda x: query_type(x.data) == 'detailed_number')
@@ -352,6 +353,8 @@ def callback_detailed_number(call):
     except Exception as e:
         appLog.warning(e)
         bot.send_message(call.message.chat.id, words.REQUEST_FAILED)
+
+
 @bot.callback_query_handler(lambda x: query_type(x.data) == 'action_services')
 def callback_action_services(call):
     args = parse_args(call.data)
@@ -397,6 +400,11 @@ def callback_action_remove_service(call):
     finally:
         data.close()
 
+
+@bot.message_handler(commands=['escape'])
+def escape(message):
+    in_registration.pop(message.chat.id)
+    bot.send_message(message.chat.id, "Отменено")
 
 
 if __name__ == '__main__':
