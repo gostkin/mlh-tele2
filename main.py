@@ -327,7 +327,8 @@ def callback_detailed_number(call):
 def callback_actions(call):
     args = parse_args(call.data)
     actions = [("Баланс", "action_balance"), ("Сервисы", "action_services"),
-               ("Тариф", "action_tariffs"), ("Платежи", "action_payments"), ("Удалить номер", "action_remove")]
+               ("Тариф", "action_tariffs"), ("Расходы", "action_payments"), ("Удалить номер", "action_remove"),
+               ("Платежи", "action_charges")]
     try:
         print_actions(call.message.chat.id, actions, args[0])
     except Exception as e:
@@ -489,7 +490,7 @@ def callback_action_balance(call):
     args = parse_args(call.data)
     data = storage.Storage()
     token = data.get_token(call.message.chat.id, args[0])
-    actions = (("Платежи", "action_payments"),)
+    actions = (("Расходы", "action_payments"), ("Платежи", "action_charges"))
     try:
         balance = api.subscribers.get_balance_info(args[0], token)
         print_balance(call.message.chat.id, actions, balance.body['data'], args[0])
@@ -499,6 +500,58 @@ def callback_action_balance(call):
         print(e)
     finally:
         data.close()
+
+
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'action_payments')
+def callback_action_payments(call):
+    args = parse_args(call.data)
+    data = storage.Storage()
+    token = data.get_token(call.message.chat.id, args[0])
+    actions = (("За неделю", "payments_week"), ("За месяц", "payments_month"))
+    try:
+        print_payments(call.message.chat.id, actions, args[0])
+    except ClientError as e:
+        bot.send_message(call.message.chat.id, 'Не удалось получить расходы: ' +
+                         e.response.body['meta']['message'])
+        print(e)
+    finally:
+        data.close()
+
+
+def print_payments(chat_id, actions, number):
+    msg = '*Расходы*:\n'
+    kb = types.InlineKeyboardMarkup()
+    for act in actions:
+        button = types.InlineKeyboardButton(text=act[0], callback_data=act[1] + '@' + number)
+        kb.add(button)
+
+    bot.send_message(chat_id, msg, reply_markup=kb, parse_mode='Markdown')
+
+
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'action_charges')
+def callback_action_charges(call):
+    args = parse_args(call.data)
+    data = storage.Storage()
+    token = data.get_token(call.message.chat.id, args[0])
+    actions = (("За неделю", "charges_week"), ("За месяц", "charges_month"))
+    try:
+        print_charges(call.message.chat.id, actions, args[0])
+    except ClientError as e:
+        bot.send_message(call.message.chat.id, 'Не удалось получить платежи: ' +
+                         e.response.body['meta']['message'])
+        print(e)
+    finally:
+        data.close()
+
+
+def print_charges(chat_id, actions, number):
+    msg = '*Платежи*:\n'
+    kb = types.InlineKeyboardMarkup()
+    for act in actions:
+        button = types.InlineKeyboardButton(text=act[0], callback_data=act[1] + '@' + number)
+        kb.add(button)
+
+    bot.send_message(chat_id, msg, reply_markup=kb, parse_mode='Markdown')
 
 
 def print_balance(chat_id, actions, data, number):
