@@ -68,5 +68,6 @@ class Storage:
             pass
 
         self.logger.info("User {} has been deleted." % {id})
+        self.db.commit()
 
 
