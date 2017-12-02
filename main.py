@@ -305,6 +305,20 @@ def print_actions(chat_id, actions, number):
     bot.send_message(chat_id, msg, reply_markup=kb, parse_mode='Markdown')
 
 
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'action_service')
+def callback_action_services(call):
+    args = parse_args(call.data)
+    data = storage.Storage()
+    token = data.get_token(call.message.chat.id, args[0])
+    try:
+        services = api.subscribers.get_service_list(args[0], token)
+        print_services(call.message.chat.id, services)
+    except ClientError as e:
+        bot.send_message(call.message.chat.id, 'Не удалось получить список сервисов: ' +
+                         e.response.body['meta']['message'])
+        print(e)
+
+
 if __name__ == '__main__':
     bot.polling(none_stop=True)
 
