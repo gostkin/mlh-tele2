@@ -2,9 +2,11 @@ import logging
 import os
 import sqlite3
 
+import config
+
 
 class Storage:
-    def __init__(self, name="main.db"):
+    def __init__(self, name=config.db):
         self.logger = logging.getLogger("db")
         if not os.path.exists(name):
             self.logger.warning("Database is not found.")
@@ -47,7 +49,7 @@ class Storage:
 
         self.db.commit()
 
-    def get_user(self, id):
+    def get_user_data(self, id):
         self.logger.info("Get user request {}." % {id})
         resp = self.db.execute("SELECT id, name, phone, token FROM Users WHERE id=?", id)
 
@@ -56,7 +58,8 @@ class Storage:
         else:
             ret = []
             for i in resp:
-                ret.append(list(i))
+                ret.append(i)
+
             return ret
 
     def delete_info(self, id, name, phone, token):
