@@ -232,10 +232,9 @@ def callback_detailed_number(call):
     try:
         service = api.subscribers.get_user_info(args[0])
 
-    if service.status_code != 200:
+    except Exception as e:
+        appLog.warning(e)
         bot.send_message(call.message.chat.id, words.REQUEST_FAILED)
-    else:
-        print_detailed_service(call.message.chat.id, service.body['data'])
 
 
 if __name__ == '__main__':
