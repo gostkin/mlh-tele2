@@ -37,7 +37,7 @@ def default_test(message):
         if info is not None:
             for i in info:
                 if message.text == i[1]:
-                    in_registration.pop(message.text)
+                    in_registration.pop(message.chat.id)
                     bot.send_message(message.chat.id, "Данный номер уже зарегестрирован на ваш аккаунт")
                     return
 
@@ -50,6 +50,7 @@ def default_test(message):
             appLog.warning(e, in_registration)
             bot.send_message(message.chat.id, "Произошла ошибка")
             return
+        in_registration.pop(message.chat.id)
         bot.send_message(message.chat.id, "Номер успешно добавлен")
 
 

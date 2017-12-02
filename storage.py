@@ -55,7 +55,8 @@ class Storage:
         self.logger.info("Get user request %d." % (id))
         resp = self.db.execute("SELECT id, phone, token FROM Users WHERE id=?", [int(id)])
 
-        if len(list(resp)) == 0:
+        resp = list(resp)
+        if len(resp) == 0:
             self.logger.warning("User %d not found." % (id))
         else:
             ret = []
