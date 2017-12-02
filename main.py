@@ -14,18 +14,24 @@ def repeat_all_messages(message):
     bot.send_message(message.chat.id, message.text)
     print(message)
 
-def print_service(chat_id, service):
-    message = '*' + service['name'] + '*\n' + service['description']
-    bot.send_message(chat_id, message, parse_mode='Markdown')
 
-@bot.message_handler(commands=['getServices'])
+def print_services(chat_id, services):
+    ret = ""
+    iter = 1
+    for service in services.body['data']:
+        ret += '*' + str(iter) + '. ' + service['name'] + '*\n' + service['description'] + '\n\n'
+        iter += 1
+
+    bot.send_message(chat_id, ret, parse_mode='Markdown')
+
+
+@bot.message_handler(commands=['get_services'])
 def get_service_list(message):
     services = api.services.get_available_services()
     if services.status_code != 200:
         bot.send_message(message.chat.id, words.REQUEST_FAILED)
     else:
-        for service in services.body['data']:
-            print_service(message.chat.id, service)
+        print_services(message.chat.id, services)
 
 
 if __name__ == '__main__':
