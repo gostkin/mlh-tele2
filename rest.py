@@ -17,7 +17,7 @@ class Services(Resource):
         return self.rest_get_available_services()
 
     def get_info(self, slug):
-        return self.resp_get_info(slug)
+        return self.rest_get_info(slug)
 
 
 class Subscribers(Resource):
