@@ -69,11 +69,11 @@ class Storage:
         self.logger.info("Delete user request %d." % (id))
         try:
             resp = self.db.execute("DELETE FROM Users WHERE id=? AND phone=?",
-                                   (id, phone))
+                                   (int(id), phone))
+            self.db.commit()
         except Exception as e:
-            pass
+            self.logger.warning(e)
 
-        self.db.commit()
         self.logger.info("User %d has been deleted." % (id))
 
     def close(self):

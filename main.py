@@ -320,6 +320,7 @@ def print_actions(chat_id, actions, number):
 
     bot.send_message(chat_id, msg, reply_markup=kb, parse_mode='Markdown')
 
+
 @bot.callback_query_handler(lambda x: query_type(x.data) == 'action_remove')
 def callback_action_remove(call):
     args = parse_args(call.data)
@@ -327,10 +328,13 @@ def callback_action_remove(call):
     data = storage.Storage()
 
     try:
-        data.delete_info(int(args[0]), call.message.text)
+        data.delete_info(call.message.chat.id, int(args[0]))
+        bot.send_message(call.message.chat.id, "Номер удален")
     except Exception as e:
         appLog.warning(e)
         bot.send_message(call.message.chat.id, words.REQUEST_FAILED)
+    finally:
+        data.close()
 
 
 @bot.message_handler(commands=['remove'])
