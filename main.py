@@ -393,6 +393,8 @@ def callback_action_remove_service(call):
     finally:
         data.close()
 
+
+
 if __name__ == '__main__':
     bot.polling(none_stop=True)
 
