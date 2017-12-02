@@ -16,15 +16,6 @@ def chunks(lst, n):
         yield lst[i:i + n]
 
 
-@bot.message_handler(func=lambda x: False, content_types=["text"])
-def default_test(message):
-    keyboard = types.InlineKeyboardMarkup()
-    url_button = types.InlineKeyboardButton(text="Хуи дрочены", url="https://ya.ru")
-    url1 = types.InlineKeyboardButton(text="Пики точены", url="https://ya.ru")
-    keyboard.row(url_button, url1)
-    bot.send_message(message.chat.id, "Привет! Нажми на кнопку и перейди в поисковик.", reply_markup=keyboard)
-
-
 def print_services(chat_id, services):
     def counter():
         counter.cnt += 1
@@ -44,7 +35,7 @@ def print_services(chat_id, services):
         bot.send_message(chat_id, msg, reply_markup=keyboard, parse_mode='Markdown')
 
 
-@bot.message_handler(func=lambda x: True, commands=['services'])
+@bot.message_handler(commands=['services'])
 def get_service_list(message):
     services = api.services.get_available_services()
     if services.status_code != 200:
