@@ -431,9 +431,42 @@ def set_tariff_on_phone(chat_id, service_id, phone, token):
         print(e)
 
 
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'action_balance')
+def callback_action_balance(call):
+    args = parse_args(call.data)
+    data = storage.Storage()
+    token = data.get_token(call.message.chat.id, args[0])
+    actions = (("Платежи", "action_payments"),)
+    try:
+        balance = api.subscribers.get_balance_info(args[0], token)
+        print_balance(call.message.chat.id, actions, balance.body['data'], args[0])
+    except ClientError as e:
+        bot.send_message(call.message.chat.id, 'Не удалось получить баланс: ' +
+                         e.response.body['meta']['message'])
+        print(e)
+    finally:
+        data.close()
+
+
+def print_balance(chat_id, actions, data, number):
+    msg = '*Баланс*:\n\n' + '*SMS*: ' + str(data['sms']) + '\n' + \
+        '*Звонки*: ' + str(data['call']) + '\n' +\
+        '*Интернет*: ' + str(data['internet']) + ' Mb\n' + \
+        '*Счет*: ' + str(data['money']) + '\n'
+    kb = types.InlineKeyboardMarkup(row_width=1)
+    for act in actions:
+        button = types.InlineKeyboardButton(text=act[0], callback_data=act[1] + '@' + number)
+        kb.add(button)
+
+    bot.send_message(chat_id, msg, reply_markup=kb, parse_mode='Markdown')
+
+
 @bot.message_handler(commands=['escape'])
 def escape(message):
-    in_registration.pop(message.chat.id)
+    try:
+        in_registration.pop(message.chat.id)
+    except Exception as e:
+        appLog.info(e)
     bot.send_message(message.chat.id, "Отменено")
 
 
