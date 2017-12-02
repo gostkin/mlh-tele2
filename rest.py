@@ -41,15 +41,15 @@ class Subscribers(Resource):
         return self.rest_remove_service(msisdn, slug, headers={'X-API-Token': x_api_token})
 
     def get_payments(self, msisdn, x_api_token, from_time, to_time, count):
-        return self.rest_remove_service(msisdn, headers={'X-API-Token': x_api_token},
-                                        body={'from': from_time, 'to': to_time, 'count': count})
+        return self.rest_remove_service(msisdn, headers={'X-API-Token': x_api_token,
+                                                         'Content-Type': 'application/json'}, body={'from': from_time, 'to': to_time, 'count': count})
 
     def get_user_info(self, msisdn):
         return self.rest_get_user_info(msisdn)
 
     def update_user_info(self, msisdn, x_api_token, data):
-        return self.rest_update_user_info(msisdn, headers={'X-API-Token': x_api_token},
-                                          body={'data': data})
+        return self.rest_update_user_info(msisdn, headers={'X-API-Token': x_api_token,
+                                                           'Content-Type': 'application/json'}, body={'data': data})
 
     def get_balance_info(self, msisdn, x_api_token):
         return self.rest_get_balance_info(msisdn, headers={'X-API-Token': x_api_token})
@@ -58,14 +58,15 @@ class Subscribers(Resource):
         return self.rest_get_tariff(msisdn, headers={'X-API-Token': x_api_token})
 
     def set_tariff(self, msisdn, x_api_token, slug):
-        return self.rest_set_tariff(msisdn, headers={'X-API-Token': x_api_token},
-                                    body={"tariffSlug": slug})
+        return self.rest_set_tariff(msisdn, body={"tariffSlug": slug},
+                                    headers={'X-API-Token': x_api_token, "Content-Type": "application/json"})
 
     def get_service_list(self, msisdn, x_api_token):
         return self.rest_get_service_list(msisdn, headers={'X-API-Token': x_api_token})
 
     def get_charges_list(self, msisdn, x_api_token, from_time, to_time, charge_type):
-        return self.rest_get_charges_list(msisdn, headers={'X-API-Token': x_api_token},
+        return self.rest_get_charges_list(msisdn, headers={'X-API-Token': x_api_token,
+                                                           'Content-Type': 'application/json'},
                                           body={'from': from_time, 'to': to_time, 'type': charge_type})
 
 class Tariffs(Resource):

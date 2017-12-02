@@ -320,6 +320,7 @@ def print_actions(chat_id, actions, number):
 
     bot.send_message(chat_id, msg, reply_markup=kb, parse_mode='Markdown')
 
+
 @bot.callback_query_handler(lambda x: query_type(x.data) == 'action_remove')
 def callback_action_remove(call):
     args = parse_args(call.data)
@@ -348,6 +349,8 @@ def callback_detailed_number(call):
     except Exception as e:
         appLog.warning(e)
         bot.send_message(call.message.chat.id, words.REQUEST_FAILED)
+
+
 @bot.callback_query_handler(lambda x: query_type(x.data) == 'action_services')
 def callback_action_services(call):
     args = parse_args(call.data)
@@ -393,6 +396,35 @@ def callback_action_remove_service(call):
     finally:
         data.close()
 
+
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'set_tariff')
+def callback_set_tariff(call):
+    args = parse_args(call.data)
+    data = storage.Storage()
+    phones = data.get_user_data(call.message.chat.id)
+    if phones is None or len(phones) == 0:
+        bot.send_message(call.message.chat.id, 'Ни одного телефона не подключено. Вы можете добавить телефон командой '
+                                               '/add')
+    elif len(phones) > 1:
+        phone_selector(call.message.chat.id, 'set_tariff_on_phone@' + args[0])
+    else:
+        set_tariff_on_phone(call.message.chat.id, args[0], phones[0][1], phones[0][2])
+    data.close()
+
+
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'set_tariff_on_phone')
+def callback_add_service_to_phone(call):
+    args = parse_args(call.data)
+    set_tariff_on_phone(call.message.chat.id, *args)
+
+
+def set_tariff_on_phone(chat_id, service_id, phone, token):
+    try:
+        api.subscribers.set_tariff(phone, token, service_id)
+        bot.send_message(chat_id, 'Тариф успешно подключён!')
+    except ClientError as e:
+        bot.send_message(chat_id, 'Не удалось подключить тариф: ' + e.response.body['meta']['message'])
+        print(e)
 
 
 if __name__ == '__main__':
