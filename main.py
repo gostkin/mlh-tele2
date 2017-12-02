@@ -180,7 +180,18 @@ def phone_selector(chat_id, callback):
     data.close()
 
 
-def add_service_to_phone(chat_id, service_id, phone, token):
+def request_confirmation(chat_id, text, callback):
+    kb = types.InlineKeyboardMarkup()
+    btn = types.InlineKeyboardButton(text='Подтвердить', callback_data=callback)
+    kb.add(btn)
+    bot.send_message(chat_id, text, reply_markup=kb)
+
+
+def add_service_to_phone(chat_id, *args):
+    request_confirmation(chat_id, 'Подтвердить подключение сервиса?', 'add_service_to_phone_confirmed@' + '@'.join(args))
+
+
+def add_service_to_phone_confirmed(chat_id, service_id, phone, token):
     try:
         api.subscribers.add_service(phone, token, service_id)
         bot.send_message(chat_id, 'Сервис успешно подключён!')
@@ -193,6 +204,12 @@ def add_service_to_phone(chat_id, service_id, phone, token):
 def callback_add_service_to_phone(call):
     args = parse_args(call.data)
     add_service_to_phone(call.message.chat.id, *args)
+
+
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'add_service_to_phone_confirmed')
+def callback_add_service_to_phone(call):
+    args = parse_args(call.data)
+    add_service_to_phone_confirmed(call.message.chat.id, *args)
 
 
 @bot.callback_query_handler(lambda x: query_type(x.data) == 'add_service')
@@ -409,6 +426,13 @@ def callback_action_detailed_service(call):
 @bot.callback_query_handler(lambda x: query_type(x.data) == 'action_remove_service')
 def callback_action_remove_service(call):
     args = parse_args(call.data)
+    request_confirmation(call.message.chat.id, 'Подтвердить отключение сервиса?',
+                         'action_remove_service_confirmed@' + '@'.join(args))
+
+
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'action_remove_service_confirmed')
+def callback_action_remove_service_confirmed(call):
+    args = parse_args(call.data)
     data = storage.Storage()
     token = data.get_token(call.message.chat.id, args[0])
 
@@ -423,8 +447,15 @@ def callback_action_remove_service(call):
         data.close()
 
 
+
 @bot.callback_query_handler(lambda x: query_type(x.data) == 'set_tariff')
 def callback_set_tariff(call):
+    args = parse_args(call.data)
+    request_confirmation(call.message.chat.id, 'Подтвердить смену тарифа?', 'set_tariff_confirmed@' + '@'.join(args))
+
+
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'set_tariff_confirmed')
+def callback_set_tariff_confirmed(call):
     args = parse_args(call.data)
     data = storage.Storage()
     phones = data.get_user_data(call.message.chat.id)
