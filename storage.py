@@ -79,4 +79,18 @@ class Storage:
     def close(self):
         self.db.close()
 
+    def get_token(self, id, phone):
+        self.logger.info("Get token user request %d." % (id))
+        resp = self.db.execute("SELECT token FROM Users WHERE id=? AND phone=?", [int(id), phone])
+
+        resp = list(resp)
+        if len(resp) == 0:
+            self.logger.warning("User %d not found." % (id))
+            return None
+        else:
+            ret = []
+            for i in resp:
+                ret.append(i)
+
+            return ret[0]
 
