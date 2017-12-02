@@ -169,8 +169,9 @@ def add_service_to_phone(chat_id, service_id, phone, token):
     try:
         api.subscribers.add_service(phone, token, service_id)
         bot.send_message(chat_id, 'Сервис успешно подключён!')
-    except Exception as e:
-        bot.send_message(chat_id, str(e))
+    except ClientError as e:
+        bot.send_message(chat_id, 'Не удалось подключить сервис: ' + e.response.body['meta']['message'])
+        print(e)
 
 
 @bot.callback_query_handler(lambda x: query_type(x.data) == 'add_service_to_phone')
