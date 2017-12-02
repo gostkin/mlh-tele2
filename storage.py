@@ -65,11 +65,11 @@ class Storage:
 
             return ret
 
-    def delete_info(self, id, phone, token):
+    def delete_info(self, id, phone):
         self.logger.info("Delete user request %d." % (id))
         try:
-            resp = self.db.execute("DELETE FROM Users WHERE id=? AND phone=? AND token=?",
-                                   (id, phone, token))
+            resp = self.db.execute("DELETE FROM Users WHERE id=? AND phone=?",
+                                   (id, phone))
         except Exception as e:
             pass
 
