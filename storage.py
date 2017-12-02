@@ -7,7 +7,7 @@ import config
 
 class Storage:
     def __init__(self, name=config.db):
-        self.logger = logging.getLogger("db")
+        self.logger = logging.getLogger("root")
         if not os.path.exists(name):
             self.logger.warning("Database is not found.")
             self.logger.info("Trying to create database.")
@@ -30,31 +30,33 @@ class Storage:
 
             self.logger.info("DB has been opened successfully and is ready for work.")
 
-    def add_user_if_needed(self, id, name, phone, token):
+    def add_user_if_needed(self, id, phone, token):
         self.logger.info("New user request.")
-        resp = self.db.execute("SELECT id FROM Users WHERE name=? AND phone=? AND token=?",
-                               (name, phone, token))
+        resp = self.db.execute("SELECT id FROM Users WHERE phone=? AND token=?",
+                                   (phone, token))
+
 
         success = False
-        for i in resp:
-            if i[0] == id:
-                success = True
+        if resp is not None:
+            for i in resp:
+                if i[0] == id:
+                    success = True
 
         if success:
-            print("User {} already exists." % {id})
+            print("User %d with such number already exists." % (id))
         else:
-            print("User {} added." % {id})
-            self.db.execute("INSERT INTO Users (id, name, phone, token) " +
-                            "VALUES (?, ?, ?, ?)", (id, name, phone, token))
+            print("User %d with number %s added." % (id, phone))
+            self.db.execute("INSERT INTO Users (id, phone, token) " +
+                            "VALUES (?, ?, ?)", (id,  phone, token))
 
         self.db.commit()
 
     def get_user_data(self, id):
-        self.logger.info("Get user request {}." % {id})
-        resp = self.db.execute("SELECT id, name, phone, token FROM Users WHERE id=?", id)
+        self.logger.info("Get user request %d." % (id))
+        resp = self.db.execute("SELECT id, phone, token FROM Users WHERE id=?", [int(id)])
 
-        if (len(resp)) == 0:
-            self.logger.warning("User {} not found." % {id})
+        if len(list(resp)) == 0:
+            self.logger.warning("User %d not found." % (id))
         else:
             ret = []
             for i in resp:
@@ -62,15 +64,15 @@ class Storage:
 
             return ret
 
-    def delete_info(self, id, name, phone, token):
-        self.logger.info("Delete user request {}." % {id})
+    def delete_info(self, id, phone, token):
+        self.logger.info("Delete user request %d." % (id))
         try:
-            resp = self.db.execute("DELETE FROM Users WHERE id=? AND name=? AND phone=? AND token=?",
-                                   (id, name, phone, token))
+            resp = self.db.execute("DELETE FROM Users WHERE id=? AND phone=? AND token=?",
+                                   (id, phone, token))
         except Exception as e:
             pass
 
-        self.logger.info("User {} has been deleted." % {id})
+        self.logger.info("User %d has been deleted." % (id))
         self.db.commit()
 
 
