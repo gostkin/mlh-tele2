@@ -5,9 +5,19 @@ import telebot
 import rest
 import words
 
+from telebot import types
+
 bot = telebot.TeleBot(config.token)
 api = rest.build_tele2_api()
 
+
+@bot.message_handler(content_types=["text"])
+def default_test(message):
+    keyboard = types.InlineKeyboardMarkup()
+    url_button = types.InlineKeyboardButton(text="Хуи дрочены", url="https://ya.ru")
+    url1 = types.InlineKeyboardButton(text="Пики точены", url="https://ya.ru")
+    keyboard.row(url_button, url1)
+    bot.send_message(message.chat.id, "Привет! Нажми на кнопку и перейди в поисковик.", reply_markup=keyboard)
 
 #@bot.message_handler(content_types=['text'])
 def repeat_all_messages(message):
