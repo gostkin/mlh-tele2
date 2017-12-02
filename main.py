@@ -68,11 +68,14 @@ def parse_args(query):
     return query.split('@')[1:]
 
 
-def print_services(chat_id, services):
+def print_services(chat_id, services, btn_title='Подробнее: ', callback='detailed_service'):
     def counter():
         counter.cnt += 1
         return counter.cnt
     counter.cnt = 0
+
+    if len(services.body['data']) == 0:
+        bot.send_message(chat_id, 'Нет подключённых сервисов!')
 
     for service_chunk in chunks(services.body['data'], 2):
         msg = '\n\n'.join(map(lambda service: '*' + str(counter()) + '. ' + service['name'] +
@@ -80,8 +83,8 @@ def print_services(chat_id, services):
         keyboard = types.InlineKeyboardMarkup(row_width=2)
         buttons = []
         for service in service_chunk:
-            button = types.InlineKeyboardButton('Подробнее: ' + service['name'],
-                                                callback_data='detailed_service@' + service['slug'])
+            button = types.InlineKeyboardButton(btn_title + service['name'],
+                                                callback_data=callback + '@' + service['slug'])
             buttons.append(button)
         keyboard.add(*buttons)
         bot.send_message(chat_id, msg, reply_markup=keyboard, parse_mode='Markdown')
@@ -143,13 +146,13 @@ def print_detailed_tariff(chat_id, tariff):
     bot.send_message(chat_id, msg, reply_markup=kb, parse_mode='Markdown')
 
 
-def print_detailed_service(chat_id, service):
+def print_detailed_service(chat_id, service, btn_text='Подключить', callback='add_service'):
     msg = '*Сервис \"' + service['name'] + '"*\n' + service['description'] + '\n' + words.ARCHIVE + ': ' +\
           words.yesno(service['archive']) + '\n' + words.CONN_FEE + ': ' + str(service['connectionFee']) + '\n' +\
           words.SUBSCR_FEE + ': ' + str(service['subscriptionFee'])
     kb = types.InlineKeyboardMarkup()
     to_site = types.InlineKeyboardButton(text='Подробнее на сайте', url=service['url'])
-    add_service = types.InlineKeyboardButton(text='Подключить', callback_data='add_service@' + service['slug'])
+    add_service = types.InlineKeyboardButton(text=btn_text, callback_data=callback + '@' + service['slug'])
     kb.add(to_site, add_service)
     bot.send_message(chat_id, msg, reply_markup=kb, parse_mode='Markdown')
 
@@ -305,18 +308,50 @@ def print_actions(chat_id, actions, number):
     bot.send_message(chat_id, msg, reply_markup=kb, parse_mode='Markdown')
 
 
-@bot.callback_query_handler(lambda x: query_type(x.data) == 'action_service')
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'action_services')
 def callback_action_services(call):
     args = parse_args(call.data)
     data = storage.Storage()
     token = data.get_token(call.message.chat.id, args[0])
     try:
         services = api.subscribers.get_service_list(args[0], token)
-        print_services(call.message.chat.id, services)
+        print_services(call.message.chat.id, services, callback='action_detailed_service@' + args[0])
     except ClientError as e:
         bot.send_message(call.message.chat.id, 'Не удалось получить список сервисов: ' +
                          e.response.body['meta']['message'])
         print(e)
+    finally:
+        data.close()
+
+
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'action_detailed_service')
+def callback_action_detailed_service(call):
+    args = parse_args(call.data)
+
+    try:
+        service = api.services.get_info(args[1])
+        print_detailed_service(call.message.chat.id, service.body['data'], btn_text='Отключить',
+                               callback='action_remove_service@' + '@'.join(args))
+    except Exception as e:
+        appLog.warning(e)
+        bot.send_message(call.message.chat.id, words.REQUEST_FAILED)
+
+
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'action_remove_service')
+def callback_action_remove_service(call):
+    args = parse_args(call.data)
+    data = storage.Storage()
+    token = data.get_token(call.message.chat.id, args[0])
+
+    try:
+        api.subscribers.remove_service(args[0], token, args[1])
+        bot.send_message(call.message.chat.id, 'Сервис успешно отключён!')
+    except ClientError as e:
+        bot.send_message(call.message.chat.id, 'Не удалось отключить сервис: ' +
+                         e.response.body['meta']['message'])
+        print(e)
+    finally:
+        data.close()
 
 
 if __name__ == '__main__':
