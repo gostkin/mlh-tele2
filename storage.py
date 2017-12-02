@@ -92,5 +92,5 @@ class Storage:
             for i in resp:
                 ret.append(i)
 
-            return ret[0]
+            return ret[0][0]
 
