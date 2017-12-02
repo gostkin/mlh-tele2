@@ -52,6 +52,7 @@ def default_test(message):
             return
         in_registration.pop(message.chat.id)
         bot.send_message(message.chat.id, "Номер успешно добавлен")
+    data.close()
 
 
 def chunks(lst, n):
@@ -61,6 +62,7 @@ def chunks(lst, n):
 
 def query_type(query):
     return query.split('@')[0]
+
 
 def parse_args(query):
     return query.split('@')[1:]
@@ -111,6 +113,7 @@ def print_detailed_service(chat_id, service):
     bot.send_message(chat_id, msg, reply_markup=kb, parse_mode='Markdown')
 
 
+
 @bot.callback_query_handler(lambda x: query_type(x.data) == 'detailed_service')
 def callback_detailed_service(call):
     args = parse_args(call.data)
@@ -128,5 +131,58 @@ def get_help(message):
 /services - получить список сервисов""")
 
 
+@bot.message_handler(commands=['numbers'])
+def get_numbers(message):
+    data = storage.Storage()
+    numbers = data.get_user_data(message.chat.id)
+    if len(numbers) == 0:
+        pass
+    else:
+        pass
+
+
+def print_numbers(chat_id, numbers):
+    def counter():
+        counter.cnt += 1
+        return counter.cnt
+    counter.cnt = 0
+
+    for number in chunks(numbers.body['data'], 1):
+        msg = '\n\n'.join(map(lambda service: '*' + str(counter()) + '. ' + service['name'] +
+                                              '*\n' + service['description'], number))
+        keyboard = types.InlineKeyboardMarkup(row_width=1)
+        buttons = []
+        for n in number:
+            button = types.InlineKeyboardButton('Подробнее: ' + n[1],
+                                                callback_data='detailed_number@' + n[1])
+            buttons.append(button)
+        keyboard.add(*buttons)
+        bot.send_message(chat_id, msg, reply_markup=keyboard, parse_mode='Markdown')
+
+
+def print_detailed_number(chat_id, number):
+    msg = '*' + service['name'] + '*\n' + service['description'] + '\n' + words.ARCHIVE + ': ' +\
+          words.yesno(service['archive']) + '\n' + words.CONN_FEE + ': ' + str(service['connectionFee']) + '\n' +\
+          words.SUBSCR_FEE + ': ' + str(service['subscriptionFee'])
+    kb = types.InlineKeyboardMarkup()
+    to_site = types.InlineKeyboardButton(text='Подробнее на сайте', url=service['url'])
+    add_service = types.InlineKeyboardButton(text='Подключить', callback_data='add_service@' + service['slug'])
+    kb.add(to_site, add_service)
+    bot.send_message(chat_id, msg, reply_markup=kb, parse_mode='Markdown')
+
+
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'detailed_number')
+def callback_detailed_number(call):
+    args = parse_args(call.data)
+    try:
+        service = api.subscribers.get_user_info(args[0])
+
+    if service.status_code != 200:
+        bot.send_message(call.message.chat.id, words.REQUEST_FAILED)
+    else:
+        print_detailed_service(call.message.chat.id, service.body['data'])
+
+
 if __name__ == '__main__':
     bot.polling(none_stop=True)
+
