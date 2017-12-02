@@ -52,6 +52,16 @@ def default_test(message):
             return
         in_registration.pop(message.chat.id)
         bot.send_message(message.chat.id, "Номер успешно добавлен")
+    elif in_registration[message.chat.id] == 3:
+        try:
+            data.delete_info(message.chat.id, message.text)
+        except Exception as e:
+            appLog.warning(e, in_registration)
+            bot.send_message(message.chat.id, "Произошла ошибка")
+            return
+        in_registration.pop(message.chat.id)
+        bot.send_message(message.chat.id, "Номер успешно удален")
+
     data.close()
 
 
@@ -250,12 +260,15 @@ def print_numbers(chat_id, numbers):
         print(number)
         msg = '*Ваши номера*:\n'+'\n'.join(map(lambda service: '*' + str(counter()) + '. ' + service[1] +
                                               '*\n', number))
-        keyboard = types.InlineKeyboardMarkup(row_width=1)
+        keyboard = types.InlineKeyboardMarkup(row_width=2)
         buttons = []
         for n in number:
             button = types.InlineKeyboardButton('Подробнее: ' + n[1],
                                                 callback_data='detailed_number@' + n[1])
-            buttons.append(button)
+
+            button1 = types.InlineKeyboardButton('Удалить номер: ' + n[1],
+                                                callback_data='action_remove@' + n[1])
+            buttons.extend([button, button1])
         keyboard.add(*buttons)
         bot.send_message(chat_id, msg, reply_markup=keyboard, parse_mode='Markdown')
 
@@ -287,7 +300,7 @@ def callback_detailed_number(call):
 def callback_actions(call):
     args = parse_args(call.data)
     actions = [("Баланс", "action_balance"), ("Сервисы", "action_services"),
-               ("Тариф", "action_tariffs"), ("Платежи", "action_payments")]
+               ("Тариф", "action_tariffs"), ("Платежи", "action_payments"), ("Удалить номер", "action_remove")]
     try:
         print_actions(call.message.chat.id, actions, args[0])
     except Exception as e:
@@ -305,18 +318,36 @@ def print_actions(chat_id, actions, number):
     bot.send_message(chat_id, msg, reply_markup=kb, parse_mode='Markdown')
 
 
-@bot.callback_query_handler(lambda x: query_type(x.data) == 'action_service')
-def callback_action_services(call):
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'action_remove')
+def callback_action_remove(call):
     args = parse_args(call.data)
+
     data = storage.Storage()
-    token = data.get_token(call.message.chat.id, args[0])
+
     try:
-        services = api.subscribers.get_service_list(args[0], token)
-        print_services(call.message.chat.id, services)
-    except ClientError as e:
-        bot.send_message(call.message.chat.id, 'Не удалось получить список сервисов: ' +
-                         e.response.body['meta']['message'])
-        print(e)
+        data.delete_info(args, call.message.text)
+    except Exception as e:
+        appLog.warning(e)
+        bot.send_message(call.message.chat.id, words.REQUEST_FAILED)
+
+
+@bot.message_handler(commands=['remove'])
+def remove_number(message):
+    in_registration[message.chat.id] = [3, []]
+    bot.send_message(message.chat.id, "Введите ваш номер:")
+
+
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'detailed_number')
+def callback_detailed_number(call):
+    args = parse_args(call.data)
+    try:
+        user = api.subscribers.get_user_info(args[0])
+        print_detailed_number(call.message.chat.id, user.body['data'])
+    except Exception as e:
+        appLog.warning(e)
+        bot.send_message(call.message.chat.id, words.REQUEST_FAILED)
+
+
 
 
 if __name__ == '__main__':
