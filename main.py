@@ -9,6 +9,7 @@ from logging.handlers import RotatingFileHandler
 import storage
 from simple_rest_client.exceptions import *
 from telebot import types
+import sys
 
 bot = telebot.TeleBot(config.token)
 api = rest.build_tele2_api()
@@ -236,8 +237,13 @@ def callback_detailed_tariff(call):
 @bot.message_handler(commands=['help', 'start'])
 def get_help(message):
     bot.send_message(message.chat.id, """Список команд:
-/help - вывести справку
-/services - получить список сервисов""")
+/help, /start - вывести справку
+/services - получить список доступных сервисов
+/add - добавить номер
+/escape - прервать добавление номера
+/tariffs - получить список доступных тарифов
+/numbers - получить список зарегистрированных номеров
+/remove - удалить номер""")
 
 
 @bot.message_handler(commands=['numbers', 'remove'])
@@ -365,6 +371,22 @@ def callback_action_services(call):
         print_services(call.message.chat.id, services, callback='action_detailed_service@' + args[0])
     except ClientError as e:
         bot.send_message(call.message.chat.id, 'Не удалось получить список сервисов: ' +
+                         e.response.body['meta']['message'])
+        print(e)
+    finally:
+        data.close()
+
+
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'action_tariffs')
+def callback_action_services(call):
+    args = parse_args(call.data)
+    data = storage.Storage()
+    token = data.get_token(call.message.chat.id, args[0])
+    try:
+        tariff = api.subscribers.get_tariff(args[0], token)
+        print_detailed_tariff(call.message.chat.id, tariff.body['data'])
+    except ClientError as e:
+        bot.send_message(call.message.chat.id, 'Не удалось получить тариф: ' +
                          e.response.body['meta']['message'])
         print(e)
     finally:
