@@ -283,6 +283,11 @@ def callback_detailed_number(call):
         bot.send_message(call.message.chat.id, words.REQUEST_FAILED)
 
 
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'actions')
+def callback_detailed_number(call):
+    args = parse_args(call.data)
+
+
 if __name__ == '__main__':
     bot.polling(none_stop=True)
 
