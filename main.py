@@ -9,6 +9,9 @@ from logging.handlers import RotatingFileHandler
 import storage
 from simple_rest_client.exceptions import *
 from telebot import types
+
+from time import localtime, strftime
+from datetime import datetime, timedelta
 import sys
 
 bot = telebot.TeleBot(config.token)
@@ -507,7 +510,7 @@ def callback_action_payments(call):
     args = parse_args(call.data)
     data = storage.Storage()
     token = data.get_token(call.message.chat.id, args[0])
-    actions = (("За неделю", "payments_week"), ("За месяц", "payments_month"))
+    actions = (("За день", "payments_week"), ("За месяц", "payments_month"))
     try:
         print_payments(call.message.chat.id, actions, args[0])
     except ClientError as e:
@@ -533,9 +536,115 @@ def callback_action_charges(call):
     args = parse_args(call.data)
     data = storage.Storage()
     token = data.get_token(call.message.chat.id, args[0])
-    actions = (("За неделю", "charges_week"), ("За месяц", "charges_month"))
+    actions = (("За день", "charges_week"), ("За месяц", "charges_month"))
     try:
         print_charges(call.message.chat.id, actions, args[0])
+    except ClientError as e:
+        bot.send_message(call.message.chat.id, 'Не удалось получить платежи: ' +
+                         e.response.body['meta']['message'])
+        print(e)
+    finally:
+        data.close()
+
+
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'charges_month')
+def callback_charges_month(call):
+    args = parse_args(call.data)
+    data = storage.Storage()
+    token = data.get_token(call.message.chat.id, args[0])
+    t = datetime.now()
+    t2 = t - timedelta(days=30)
+    frm = t2.strftime("%Y-%M-%DT%H:%M:%S")
+    to = t.strftime("%Y-%M-%DT%H:%M:%S")
+    print(frm)
+    try:
+        info = api.subscribers.get_charges_list(args[0], token, frm, to)
+        info = info.body['data']
+        msg = ""
+        for i in info:
+            msg += "*Тип*: " + i['type'] + '\n' + '*Дата*: ' + i['date'] + '\n' + '*Стоимость*: ' + i['fee'] + '\n\n'
+        
+        bot.send_message(call.message.chat.id, msg, parse_mode='Markdown')
+    except ClientError as e:
+        bot.send_message(call.message.chat.id, 'Не удалось получить платежи: ' +
+                         e.response.body['meta']['message'])
+        print(e)
+    finally:
+        data.close()
+
+
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'charges_week')
+def callback_charges_week(call):
+    args = parse_args(call.data)
+    data = storage.Storage()
+    token = data.get_token(call.message.chat.id, args[0])
+    t = datetime.now()
+    t2 = t - timedelta(days=1)
+    frm = t2.strftime("%Y-%M-%DT%H:%M:%S")
+    to = t.strftime("%Y-%M-%DT%H:%M:%S")
+    print(frm)
+    try:
+        info = api.subscribers.get_charges_list(args[0], token, frm, to)
+        info = info.body['data']
+        msg = ""
+        for i in info:
+            msg += "*Тип*: " + i['type'] + '\n' + '*Дата*: ' + i['date'] + '\n' + '*Стоимость*: ' + i['fee'] + '\n\n'
+
+        bot.send_message(call.message.chat.id, msg, parse_mode='Markdown')
+    except ClientError as e:
+        bot.send_message(call.message.chat.id, 'Не удалось получить платежи: ' +
+                         e.response.body['meta']['message'])
+        print(e)
+    finally:
+        data.close()
+        
+
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'payments_week')
+def callback_payments_week(call):
+    args = parse_args(call.data)
+    data = storage.Storage()
+    token = data.get_token(call.message.chat.id, args[0])
+    t = datetime.now()
+    t2 = t - timedelta(days=30)
+    frm = t2.strftime("%Y-%M-%DT%H:%M:%S")
+    to = t.strftime("%Y-%M-%DT%H:%M:%S")
+    print(frm)
+
+    try:
+        info = api.subscribers.get_payments(args[0], token, frm, to)
+        info = info.body['data']
+        msg = ""
+        for i in info:
+            msg += "*Тип*: " + i['type'] + '\n' + '*Дата*: ' + i['date'] + '\n' + '*Стоимость*: ' + i['fee'] + '\n\n'
+
+        bot.send_message(call.message.chat.id, msg, parse_mode='Markdown')
+    except ClientError as e:
+        bot.send_message(call.message.chat.id, 'Не удалось получить платежи: ' +
+                         e.response.body['meta']['message'])
+        print(e)
+    finally:
+        data.close()
+
+
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'payments_month')
+def callback_payments_month(call):
+    args = parse_args(call.data)
+    data = storage.Storage()
+    token = data.get_token(call.message.chat.id, args[0])
+    t = datetime.now()
+    t2 = t - timedelta(days=1)
+    frm = t2.strftime("%Y-%M-%DT%H:%M:%S")
+    to = t.strftime("%Y-%M-%DT%H:%M:%S")
+    print(frm)
+
+    try:
+        info = api.subscribers.get_charges_list(args[0], token, frm, to)
+        info = info.body['data']
+        msg = ""
+        for i in info:
+            msg += "*Тип*: " + i['type'] + '\n' + '*Дата*: ' + i['date'] + '\n' + '*Стоимость*: ' + i['fee'] + '\n\n'
+
+        bot.send_message(call.message.chat.id, msg, parse_mode='Markdown')
     except ClientError as e:
         bot.send_message(call.message.chat.id, 'Не удалось получить платежи: ' +
                          e.response.body['meta']['message'])

@@ -40,9 +40,9 @@ class Subscribers(Resource):
     def remove_service(self, msisdn, x_api_token, slug):
         return self.rest_remove_service(msisdn, slug, headers={'X-API-Token': x_api_token})
 
-    def get_payments(self, msisdn, x_api_token, from_time, to_time, count):
-        return self.rest_remove_service(msisdn, headers={'X-API-Token': x_api_token,
-                                                         'Content-Type': 'application/json'}, body={'from': from_time, 'to': to_time, 'count': count})
+    def get_payments(self, msisdn, x_api_token, from_time, to_time, count=10):
+        return self.rest_get_payments(msisdn, headers={'X-API-Token': x_api_token,
+                                                         'Content-Type': 'application/json'}, body={'from': from_time, 'to': to_time, 'count': str(count)})
 
     def get_user_info(self, msisdn):
         return self.rest_get_user_info(msisdn)
@@ -64,10 +64,10 @@ class Subscribers(Resource):
     def get_service_list(self, msisdn, x_api_token):
         return self.rest_get_service_list(msisdn, headers={'X-API-Token': x_api_token})
 
-    def get_charges_list(self, msisdn, x_api_token, from_time, to_time, charge_type):
+    def get_charges_list(self, msisdn, x_api_token, from_time, to_time):
         return self.rest_get_charges_list(msisdn, headers={'X-API-Token': x_api_token,
                                                            'Content-Type': 'application/json'},
-                                          body={'from': from_time, 'to': to_time, 'type': charge_type})
+                                          body={'from': from_time, 'to': to_time})
 
 class Tariffs(Resource):
     actions = {
