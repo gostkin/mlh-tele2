@@ -62,6 +62,7 @@ def chunks(lst, n):
 def query_type(query):
     return query.split('@')[0]
 
+
 def parse_args(query):
     return query.split('@')[1:]
 
@@ -85,13 +86,43 @@ def print_services(chat_id, services):
         bot.send_message(chat_id, msg, reply_markup=keyboard, parse_mode='Markdown')
 
 
+def print_tariffs(chat_id, tariffs):
+    def counter():
+        counter.cnt += 1
+        return counter.cnt
+    counter.cnt = 0
+
+    for tariff_chunk in chunks(tariffs.body['data'], 2):
+        msg = '\n\n'.join(map(lambda service: '*' + str(counter()) + '. ' + service['name'] +
+                                              '*\n', tariff_chunk))
+        keyboard = types.InlineKeyboardMarkup(row_width=2)
+        buttons = []
+        for tariff in tariff_chunk:
+            button = types.InlineKeyboardButton('Подробнее: ' + tariff['name'],
+                                                callback_data='detailed_tariff@' + tariff['slug'])
+            buttons.append(button)
+        keyboard.add(*buttons)
+        bot.send_message(chat_id, msg, reply_markup=keyboard, parse_mode='Markdown')
+
+
 @bot.message_handler(commands=['services'])
 def get_service_list(message):
-    services = api.services.get_available_services()
-    if services.status_code != 200:
-        bot.send_message(message.chat.id, words.REQUEST_FAILED)
-    else:
+    try:
+        services = api.services.get_available_services()
         print_services(message.chat.id, services)
+    except Exception as e:
+        appLog.warning(e)
+        bot.send_message(message.chat.id, words.REQUEST_FAILED)
+
+
+@bot.message_handler(commands=['tariffs'])
+def get_service_list(message):
+    try:
+        tariffs = api.tariffs.get_available_tariffs()
+        print_tariffs(message.chat.id, tariffs)
+    except Exception as e:
+        appLog.warning(e)
+        bot.send_message(message.chat.id, words.REQUEST_FAILED)
 
 
 @bot.message_handler(commands=['add'])
@@ -100,8 +131,19 @@ def add_number(message):
     bot.send_message(message.chat.id, "Введите ваш номер:")
 
 
+def print_detailed_tariff(chat_id, tariff):
+    msg = '*Тариф \"' + tariff['name'] + '\"*\n' + '\n' + words.ARCHIVE + ': ' + \
+          words.yesno(tariff['archive']) + '\n' + \
+          words.SUBSCR_FEE + ': ' + str(tariff['subscriptionFee'])
+    kb = types.InlineKeyboardMarkup()
+    to_site = types.InlineKeyboardButton(text='Подробнее на сайте', url=tariff['url'])
+    add_service = types.InlineKeyboardButton(text='Подключить', callback_data='set_tariff@' + tariff['slug'])
+    kb.add(to_site, add_service)
+    bot.send_message(chat_id, msg, reply_markup=kb, parse_mode='Markdown')
+
+
 def print_detailed_service(chat_id, service):
-    msg = '*' + service['name'] + '*\n' + service['description'] + '\n' + words.ARCHIVE + ': ' +\
+    msg = '*Сервис \"' + service['name'] + '"*\n' + service['description'] + '\n' + words.ARCHIVE + ': ' +\
           words.yesno(service['archive']) + '\n' + words.CONN_FEE + ': ' + str(service['connectionFee']) + '\n' +\
           words.SUBSCR_FEE + ': ' + str(service['subscriptionFee'])
     kb = types.InlineKeyboardMarkup()
@@ -114,11 +156,25 @@ def print_detailed_service(chat_id, service):
 @bot.callback_query_handler(lambda x: query_type(x.data) == 'detailed_service')
 def callback_detailed_service(call):
     args = parse_args(call.data)
-    service = api.services.get_info(args[0])
-    if service.status_code != 200:
-        bot.send_message(call.message.chat.id, words.REQUEST_FAILED)
-    else:
+
+    try:
+        service = api.services.get_info(args[0])
         print_detailed_service(call.message.chat.id, service.body['data'])
+    except Exception as e:
+        appLog.warning(e)
+        bot.send_message(call.message.chat.id, words.REQUEST_FAILED)
+
+
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'detailed_tariff')
+def callback_detailed_tariff(call):
+    args = parse_args(call.data)
+
+    try:
+        tariff = api.tariffs.get_info(args[0])
+        print_detailed_tariff(call.message.chat.id, tariff.body['data'])
+    except Exception as e:
+        appLog.warning(e)
+        bot.send_message(call.message.chat.id, words.REQUEST_FAILED)
 
 
 @bot.message_handler(commands=['help', 'start'])
