@@ -228,11 +228,15 @@ def get_help(message):
 @bot.message_handler(commands=['numbers'])
 def get_numbers(message):
     data = storage.Storage()
-    numbers = data.get_user_data(message.chat.id)
-    if len(numbers) == 0:
-        pass
-    else:
-        pass
+    try:
+        numbers = data.get_user_data(message.chat.id)
+        if not numbers:
+            bot.send_message(message.chat.id, "У вас нет зарегестрированных номеров")
+        else:
+            print_numbers(message.chat.id, numbers)
+    except Exception as e:
+        appLog.warning(e)
+        bot.send_message(message.chat.id, words.REQUEST_FAILED)
 
 
 def print_numbers(chat_id, numbers):
@@ -241,9 +245,10 @@ def print_numbers(chat_id, numbers):
         return counter.cnt
     counter.cnt = 0
 
-    for number in chunks(numbers.body['data'], 1):
-        msg = '\n\n'.join(map(lambda service: '*' + str(counter()) + '. ' + service['name'] +
-                                              '*\n' + service['description'], number))
+    for number in chunks(numbers, 1):
+        print(number)
+        msg = '*Ваши номера*:\n'+'\n'.join(map(lambda service: '*' + str(counter()) + '. ' + service[1] +
+                                              '*\n', number))
         keyboard = types.InlineKeyboardMarkup(row_width=1)
         buttons = []
         for n in number:
@@ -255,13 +260,14 @@ def print_numbers(chat_id, numbers):
 
 
 def print_detailed_number(chat_id, number):
-    msg = '*' + service['name'] + '*\n' + service['description'] + '\n' + words.ARCHIVE + ': ' +\
-          words.yesno(service['archive']) + '\n' + words.CONN_FEE + ': ' + str(service['connectionFee']) + '\n' +\
-          words.SUBSCR_FEE + ': ' + str(service['subscriptionFee'])
+    msg = '*Номер* : ' + number['msisdn'] + '\n' + \
+          "*Фамилия*: " + number['lastName'] + '\n' + \
+          "*Имя*: " + number['firstName'] + '\n' + \
+          "*Отчество*: " + number['middleName'] + '\n' + \
+          "*E-mail*: " + number['email'] + '\n'
     kb = types.InlineKeyboardMarkup()
-    to_site = types.InlineKeyboardButton(text='Подробнее на сайте', url=service['url'])
-    add_service = types.InlineKeyboardButton(text='Подключить', callback_data='add_service@' + service['slug'])
-    kb.add(to_site, add_service)
+    actions = types.InlineKeyboardButton(text='Действия с номером', callback_data='add_service@' + number['msisdn'])
+    kb.add(actions)
     bot.send_message(chat_id, msg, reply_markup=kb, parse_mode='Markdown')
 
 
@@ -269,8 +275,8 @@ def print_detailed_number(chat_id, number):
 def callback_detailed_number(call):
     args = parse_args(call.data)
     try:
-        service = api.subscribers.get_user_info(args[0])
-
+        user = api.subscribers.get_user_info(args[0])
+        print_detailed_number(call.message.chat.id, user.body['data'])
     except Exception as e:
         appLog.warning(e)
         bot.send_message(call.message.chat.id, words.REQUEST_FAILED)

@@ -76,4 +76,7 @@ class Storage:
         self.logger.info("User %d has been deleted." % (id))
         self.db.commit()
 
+    def close(self):
+        self.db.close()
+
 
