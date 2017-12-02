@@ -2,13 +2,22 @@ from simple_rest_client.api import API
 from simple_rest_client.resource import Resource
 
 
+class RESTException(Exception):
+    def __init__(self, response):
+        self.response = response
+
+
 class Services(Resource):
     actions = {
         'rest_get_available_services': {'method': 'GET', 'url': 'services/available'},
         'rest_get_info': {'method': 'GET', 'url': 'services/{}'}
     }
 
+    def get_available_services(self):
+        return self.rest_get_available_services()
 
+    def get_info(self, slug):
+        return self.resp_get_info(slug)
 
 
 class Subscribers(Resource):
@@ -25,12 +34,51 @@ class Subscribers(Resource):
         'rest_get_charges_list': {'method': 'GET', 'url': 'subscribers/{}/charges'}
     }
 
+    def add_service(self, msisdn, x_api_token, slug):
+        return self.rest_add_service(msisdn, slug, headers={'X-API-Token': x_api_token})
+
+    def remove_service(self, msisdn, x_api_token, slug):
+        return self.rest_remove_service(msisdn, slug, headers={'X-API-Token': x_api_token})
+
+    def get_payments(self, msisdn, x_api_token, from_time, to_time, count):
+        return self.rest_remove_service(msisdn, headers={'X-API-Token': x_api_token},
+                                        body={'from': from_time, 'to': to_time, 'count': count})
+
+    def get_user_info(self, msisdn):
+        return self.rest_get_user_info(msisdn)
+
+    def update_user_info(self, msisdn, x_api_token, data):
+        return self.rest_update_user_info(msisdn, headers={'X-API-Token': x_api_token},
+                                          body={'data': data})
+
+    def get_balance_info(self, msisdn, x_api_token):
+        return self.rest_get_balance_info(msisdn, headers={'X-API-Token': x_api_token})
+
+    def get_tariff(self, msisdn, x_api_token):
+        return self.rest_get_tariff(msisdn, headers={'X-API-Token': x_api_token})
+
+    def set_tariff(self, msisdn, x_api_token, slug):
+        return self.rest_set_tariff(msisdn, headers={'X-API-Token': x_api_token},
+                                    body={"tariffSlug": slug})
+
+    def get_service_list(self, msisdn, x_api_token):
+        return self.rest_get_service_list(msisdn, headers={'X-API-Token': x_api_token})
+
+    def get_charges_list(self, msisdn, x_api_token, from_time, to_time, charge_type):
+        return self.rest_get_charges_list(msisdn, headers={'X-API-Token': x_api_token},
+                                          body={'from': from_time, 'to': to_time, 'type': charge_type})
 
 class Tariffs(Resource):
     actions = {
         'rest_get_available_tariffs': {'method': 'GET', 'url': 'tariffs/available'},
         'rest_get_info': {'method': 'GET', 'url': 'tariffs/{}'}
     }
+
+    def get_available_tariffs(self):
+        return self.rest_get_available_tariffs()
+
+    def get_info(self, slug):
+        return self.rest_get_info(slug)
 
 
 def build_tele2_api():
