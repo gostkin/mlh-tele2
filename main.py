@@ -227,7 +227,7 @@ def print_detailed_number(chat_id, number):
           "*Отчество*: " + number['middleName'] + '\n' + \
           "*E-mail*: " + number['email'] + '\n'
     kb = types.InlineKeyboardMarkup()
-    actions = types.InlineKeyboardButton(text='Действия с номером', callback_data='add_service@' + number['msisdn'])
+    actions = types.InlineKeyboardButton(text='Действия с номером', callback_data='actions@' + number['msisdn'])
     kb.add(actions)
     bot.send_message(chat_id, msg, reply_markup=kb, parse_mode='Markdown')
 
