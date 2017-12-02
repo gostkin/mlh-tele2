@@ -286,21 +286,23 @@ def callback_detailed_number(call):
 @bot.callback_query_handler(lambda x: query_type(x.data) == 'actions')
 def callback_actions(call):
     args = parse_args(call.data)
-    actions = ["action_balance", "action_services", "action_tariffs", "action_payments"]
+    actions = [("Баланс", "action_balance"), ("Сервисы", "action_services"),
+               ("Тариф", "action_tariffs"), ("Платежи", "action_payments")]
     try:
-        print_actions(call.message.chat.id, actions)
+        print_actions(call.message.chat.id, actions, args[0])
     except Exception as e:
         appLog.warning(e)
         bot.send_message(call.message.chat.id, words.REQUEST_FAILED)
 
 
-def print_actions(chat_id, actions):
+def print_actions(chat_id, actions, number):
     msg = '*Действия*:\n'
     kb = types.InlineKeyboardMarkup()
-    actions = types.InlineKeyboardButton(text='Действия с номером', callback_data='actions@' + number['msisdn'])
-    kb.add(actions)
-    bot.send_message(chat_id, msg, reply_markup=kb, parse_mode='Markdown')
+    for act in actions:
+        button = types.InlineKeyboardButton(text=act[0], callback_data=act[1] + '@' + number)
+        kb.add(button)
 
+    bot.send_message(chat_id, msg, reply_markup=kb, parse_mode='Markdown')
 
 
 if __name__ == '__main__':
