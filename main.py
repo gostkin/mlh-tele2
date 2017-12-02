@@ -7,7 +7,7 @@ import words
 import logging
 from logging.handlers import RotatingFileHandler
 import storage
-
+from simple_rest_client.exceptions import *
 from telebot import types
 
 bot = telebot.TeleBot(config.token)
@@ -153,6 +153,46 @@ def print_detailed_service(chat_id, service):
     kb.add(to_site, add_service)
     bot.send_message(chat_id, msg, reply_markup=kb, parse_mode='Markdown')
 
+
+def phone_selector(chat_id, callback):
+    data = storage.Storage()
+    phones = data.get_user_data(chat_id)
+    kb = types.InlineKeyboardMarkup(row_width=1)
+    for phone in phones:
+        btn = types.InlineKeyboardButton(text=phone[1], callback_data=callback + '@' + phone[1] + '@' + phone[2])
+        kb.add(btn)
+    bot.send_message(chat_id, 'Выберите телефон:', reply_markup=kb)
+    data.close()
+
+
+def add_service_to_phone(chat_id, service_id, phone, token):
+    try:
+        api.subscribers.add_service(phone, token, service_id)
+        bot.send_message(chat_id, 'Сервис успешно подключён!')
+    except ClientError as e:
+        bot.send_message(chat_id, 'Не удалось подключить сервис: ' + e.response.body['meta']['message'])
+        print(e)
+
+
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'add_service_to_phone')
+def callback_add_service_to_phone(call):
+    args = parse_args(call.data)
+    add_service_to_phone(call.message.chat.id, *args)
+
+
+@bot.callback_query_handler(lambda x: query_type(x.data) == 'add_service')
+def callback_add_service(call):
+    args = parse_args(call.data)
+    data = storage.Storage()
+    phones = data.get_user_data(call.message.chat.id)
+    if phones is None or len(phones) == 0:
+        bot.send_message(call.message.chat.id, 'Ни одного телефона не подключено. Вы можете добавить телефон командой '
+                                               '/add')
+    elif len(phones) > 1:
+        phone_selector(call.message.chat.id, 'add_service_to_phone@' + args[0])
+    else:
+        add_service_to_phone(call.message.chat.id, args[0], phones[0][1], phones[0][2])
+    data.close()
 
 
 @bot.callback_query_handler(lambda x: query_type(x.data) == 'detailed_service')
