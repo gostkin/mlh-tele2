@@ -73,8 +73,8 @@ class Storage:
         except Exception as e:
             pass
 
-        self.logger.info("User %d has been deleted." % (id))
         self.db.commit()
+        self.logger.info("User %d has been deleted." % (id))
 
     def close(self):
         self.db.close()

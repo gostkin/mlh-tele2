@@ -327,7 +327,7 @@ def callback_action_remove(call):
     data = storage.Storage()
 
     try:
-        data.delete_info(args, call.message.text)
+        data.delete_info(int(args[0]), call.message.text)
     except Exception as e:
         appLog.warning(e)
         bot.send_message(call.message.chat.id, words.REQUEST_FAILED)
