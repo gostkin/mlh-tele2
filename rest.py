@@ -40,9 +40,10 @@ class Subscribers(Resource):
     def remove_service(self, msisdn, x_api_token, slug):
         return self.rest_remove_service(msisdn, slug, headers={'X-API-Token': x_api_token})
 
-    def get_payments(self, msisdn, x_api_token, from_time, to_time, count=10):
+    def get_payments(self, msisdn, x_api_token, from_time, to_time):
         return self.rest_get_payments(msisdn, headers={'X-API-Token': x_api_token,
-                                                         'Content-Type': 'application/json'}, body={'from': from_time, 'to': to_time, 'count': str(count)})
+                                                       'Content-Type': 'application/json'},
+                                      params={'from': from_time, 'to': to_time})
 
     def get_user_info(self, msisdn):
         return self.rest_get_user_info(msisdn)
@@ -67,7 +68,8 @@ class Subscribers(Resource):
     def get_charges_list(self, msisdn, x_api_token, from_time, to_time):
         return self.rest_get_charges_list(msisdn, headers={'X-API-Token': x_api_token,
                                                            'Content-Type': 'application/json'},
-                                          body={'from': from_time, 'to': to_time})
+                                          params={'from': from_time, 'to': to_time})
+
 
 class Tariffs(Resource):
     actions = {
@@ -98,7 +100,7 @@ def build_tele2_api():
 
     return tele2api
 
+
 if __name__ == '__main__':
     api = build_tele2_api()
     print(api.services.get_info('black-list'))
-
